@@ -144,6 +144,12 @@ const AppContent = () => {
         if (oldCopy.rfc !== updatedCompany.rfc) {
           changes.push(`RFC: ${oldCopy.rfc || 'N/A'} -> ${updatedCompany.rfc}`);
         }
+        if (oldCopy.employerReg !== updatedCompany.employerReg) {
+          changes.push(`Registro Patronal: ${oldCopy.employerReg || 'N/A'} -> ${updatedCompany.employerReg || 'N/A'}`);
+        }
+        if (oldCopy.address !== updatedCompany.address) {
+          changes.push(`Dirección: ${oldCopy.address || 'N/A'} -> ${updatedCompany.address || 'N/A'}`);
+        }
       }
 
       if (changes.length > 0) {
