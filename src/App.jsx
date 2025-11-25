@@ -45,50 +45,52 @@ const AppContent = () => {
   const { user, login } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
 
-  // If no user logged in, show login page
-  if (!user) {
-    return <LoginPage onLogin={login} />;
-  }
-
   // --- STATE MANAGEMENT WITH FIREBASE ---
   const [companies, setCompanies] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [auditLog, setAuditLog] = useState([]);
 
   // Subscribe to Companies
   useEffect(() => {
+    if (!user) return;
     const unsubscribe = subscribeToCompanies((data) => {
       setCompanies(data);
     });
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   // Subscribe to Employees
   useEffect(() => {
+    if (!user) return;
     const unsubscribe = subscribeToEmployees((data) => {
       setEmployees(data);
     });
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   // Subscribe to Users
   useEffect(() => {
+    if (!user) return;
     const unsubscribe = subscribeToUsers((data) => {
       setUsers(data);
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
-
-
+  }, [user]);
 
   // Audit log state and real‑time subscription (inside AppContent)
-  const [auditLog, setAuditLog] = useState([]);
   useEffect(() => {
+    if (!user) return;
     const unsub = subscribeToAuditLog((data) => setAuditLog(data));
     return () => unsub();
-  }, []);
+  }, [user]);
+
+  // If no user logged in, show login page
+  if (!user) {
+    return <LoginPage onLogin={login} />;
+  }
 
   // --- HANDLERS (Async with Firebase) ---
 
@@ -113,9 +115,11 @@ const AppContent = () => {
       const added = await addCompany(newCompany);
       addToLog(added.id, 'Creación', 'Empresa registrada en el sistema');
       console.log("Empresa creada:", added);
+      return added; // Return the created company
     } catch (error) {
       console.error('Error al crear empresa:', error);
       alert('Error al crear empresa: ' + error.message);
+      throw error; // Re-throw to let the caller handle it
     }
   };
 
