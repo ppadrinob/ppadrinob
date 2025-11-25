@@ -3,24 +3,40 @@ import CompanyForm from './CompanyForm';
 import CompanyDetails from './CompanyDetails';
 import '../../../styles/index.css';
 
-const CompanyList = ({ companies, onAddCompany, onUpdateCompany, auditLog }) => {
+const CompanyList = ({ companies, onAddCompany, onUpdateCompany, auditLog, userRole }) => {
+    // UI state
     const [isCreating, setIsCreating] = useState(false);
     const [editingCompany, setEditingCompany] = useState(null);
     const [viewingCompany, setViewingCompany] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
 
+    // Filter list by search term
     const filteredCompanies = companies.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.rfc.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleSave = (companyData) => {
-        if (editingCompany) {
-            onUpdateCompany({ ...editingCompany, ...companyData });
-            setEditingCompany(null);
-        } else {
-            onAddCompany({ ...companyData, id: Date.now(), employees: 0 });
-            setIsCreating(false);
+    // -------------------------------------------------
+    // Handlers (async, with logging for debugging)
+    // -------------------------------------------------
+    const handleSave = async (companyData) => {
+        try {
+            if (editingCompany) {
+                console.log('Updating company with ID:', editingCompany.id);
+                console.log('Data to update:', companyData);
+                const merged = { ...editingCompany, ...companyData };
+                console.log('Merged data:', merged);
+                await onUpdateCompany(merged);
+                setEditingCompany(null);
+            } else {
+                // onAddCompany returns the created document (including its Firestore ID)
+                const created = await onAddCompany({ ...companyData, employees: 0 });
+                console.log('Company created with Firestore ID:', created.id);
+                setIsCreating(false);
+            }
+        } catch (error) {
+            console.error('Error saving company:', error);
+            alert('Error al guardar empresa: ' + (error?.message || error));
         }
     };
 
@@ -30,6 +46,9 @@ const CompanyList = ({ companies, onAddCompany, onUpdateCompany, auditLog }) => 
         setViewingCompany(null);
     };
 
+    // -------------------------------------------------
+    // Conditional rendering
+    // -------------------------------------------------
     if (isCreating || editingCompany) {
         return <CompanyForm onSave={handleSave} onCancel={handleCancel} initialData={editingCompany} />;
     }
@@ -38,6 +57,9 @@ const CompanyList = ({ companies, onAddCompany, onUpdateCompany, auditLog }) => 
         return <CompanyDetails company={viewingCompany} auditLog={auditLog} onClose={handleCancel} />;
     }
 
+    // -------------------------------------------------
+    // Main list UI
+    // -------------------------------------------------
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -45,21 +67,23 @@ const CompanyList = ({ companies, onAddCompany, onUpdateCompany, auditLog }) => 
                     <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>Empresas</h2>
                     <p style={{ color: 'var(--text-secondary)' }}>Gestiona las empresas registradas en el sistema</p>
                 </div>
-                <button
-                    onClick={() => setIsCreating(true)}
-                    style={{
-                        padding: '0.75rem 1.5rem',
-                        borderRadius: 'var(--radius-md)',
-                        background: 'var(--primary-color)',
-                        color: 'white',
-                        fontWeight: '600',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem'
-                    }}
-                >
-                    <span>+</span> Nueva Empresa
-                </button>
+                {userRole === 'super_admin' && (
+                    <button
+                        onClick={() => setIsCreating(true)}
+                        style={{
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: 'var(--radius-md)',
+                            background: 'var(--primary-color)',
+                            color: 'white',
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                        }}
+                    >
+                        <span>+</span> Nueva Empresa
+                    </button>
+                )}
             </div>
 
             <div className="glass-panel" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
@@ -67,7 +91,7 @@ const CompanyList = ({ companies, onAddCompany, onUpdateCompany, auditLog }) => 
                     type="text"
                     placeholder="Buscar empresa por nombre o RFC..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={e => setSearchTerm(e.target.value)}
                     style={{
                         width: '100%',
                         padding: '0.75rem',
@@ -105,23 +129,19 @@ const CompanyList = ({ companies, onAddCompany, onUpdateCompany, auditLog }) => 
                                             onClick={() => setViewingCompany(company)}
                                             style={{ color: 'var(--text-primary)', background: 'transparent', marginRight: '1rem', cursor: 'pointer' }}
                                             title="Ver Detalles"
-                                        >
-                                            👁️
-                                        </button>
-                                        <button
-                                            onClick={() => setEditingCompany(company)}
-                                            style={{ color: 'var(--primary-color)', background: 'transparent', marginRight: '1rem', cursor: 'pointer' }}
-                                        >
-                                            Editar
-                                        </button>
+                                        >👁️</button>
+                                        {userRole === 'super_admin' && (
+                                            <button
+                                                onClick={() => setEditingCompany(company)}
+                                                style={{ color: 'var(--primary-color)', background: 'transparent', marginRight: '1rem', cursor: 'pointer' }}
+                                            >Editar</button>
+                                        )}
                                     </td>
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                                    No se encontraron empresas
-                                </td>
+                                <td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No se encontraron empresas</td>
                             </tr>
                         )}
                     </tbody>

@@ -2,8 +2,20 @@ import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout/Layout';
 import LoginPage from './components/Auth/LoginPage';
 import CompanyList from './components/Modules/Company/CompanyList';
+import UserList from './components/Modules/Users/UserList';
+import EmployeeList from './components/Modules/Employees/EmployeeList';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { companies as initialCompanies, employees, payrolls } from './data/mockData';
+import { payrolls } from './data/mockData';
+import {
+  subscribeToCompanies, addCompany, updateCompany,
+  subscribeToEmployees, addEmployee, updateEmployee, deleteEmployee,
+  subscribeToUsers, addUser, updateUser, deleteUser,
+  // NEW: audit log services
+  subscribeToAuditLog, addLogEntry
+} from './services/firestoreService';
+
+// Audit log state and subscription are now handled inside AppContent
+
 
 const Dashboard = ({ companiesCount, employeesCount, payrollsCount }) => {
   return (
@@ -30,64 +42,175 @@ const Dashboard = ({ companiesCount, employeesCount, payrollsCount }) => {
 };
 
 const AppContent = () => {
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
 
-  // Initialize companies from localStorage or fallback to mock data
-  const [companies, setCompanies] = useState(() => {
-    const savedCompanies = localStorage.getItem('companies');
-    return savedCompanies ? JSON.parse(savedCompanies) : initialCompanies;
-  });
+  // If no user logged in, show login page
+  if (!user) {
+    return <LoginPage onLogin={login} />;
+  }
 
-  // Save to localStorage whenever companies change
+  // --- STATE MANAGEMENT WITH FIREBASE ---
+  const [companies, setCompanies] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Subscribe to Companies
   useEffect(() => {
-    localStorage.setItem('companies', JSON.stringify(companies));
-  }, [companies]);
+    const unsubscribe = subscribeToCompanies((data) => {
+      setCompanies(data);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  // Initialize audit log from localStorage
-  const [auditLog, setAuditLog] = useState(() => {
-    const savedLog = localStorage.getItem('auditLog');
-    return savedLog ? JSON.parse(savedLog) : [];
-  });
-
-  // Save audit log to localStorage
+  // Subscribe to Employees
   useEffect(() => {
-    localStorage.setItem('auditLog', JSON.stringify(auditLog));
-  }, [auditLog]);
+    const unsubscribe = subscribeToEmployees((data) => {
+      setEmployees(data);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  if (!user) return <LoginPage />;
+  // Subscribe to Users
+  useEffect(() => {
+    const unsubscribe = subscribeToUsers((data) => {
+      setUsers(data);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  const addToLog = (companyId, action, details) => {
-    const newEntry = {
-      id: Date.now(),
+
+
+  // Audit log state and real‑time subscription (inside AppContent)
+  const [auditLog, setAuditLog] = useState([]);
+  useEffect(() => {
+    const unsub = subscribeToAuditLog((data) => setAuditLog(data));
+    return () => unsub();
+  }, []);
+
+  // --- HANDLERS (Async with Firebase) ---
+
+  // Async function to add a log entry to Firestore (real‑time listener will update state)
+  const addToLog = async (companyId, action, details) => {
+    const entry = {
       companyId,
       user: user.email,
-      action, // 'Creación' | 'Edición'
+      action,
       details,
       timestamp: new Date().toISOString()
     };
-    setAuditLog(prev => [newEntry, ...prev]);
-  };
-
-  const handleAddCompany = (newCompany) => {
-    setCompanies([...companies, newCompany]);
-    addToLog(newCompany.id, 'Creación', 'Empresa registrada en el sistema');
-  };
-
-  const handleUpdateCompany = (updatedCompany) => {
-    const oldCompany = companies.find(c => c.id === updatedCompany.id);
-    const changes = [];
-
-    if (oldCompany.name !== updatedCompany.name) changes.push(`Nombre: ${oldCompany.name} -> ${updatedCompany.name}`);
-    if (oldCompany.legalName !== updatedCompany.legalName) changes.push(`Razón Social: ${oldCompany.legalName || 'N/A'} -> ${updatedCompany.legalName}`);
-    if (oldCompany.rfc !== updatedCompany.rfc) changes.push(`RFC: ${oldCompany.rfc || 'N/A'} -> ${updatedCompany.rfc}`);
-    if (oldCompany.employerReg !== updatedCompany.employerReg) changes.push(`Reg. Patronal: ${oldCompany.employerReg || 'N/A'} -> ${updatedCompany.employerReg}`);
-    if (oldCompany.address !== updatedCompany.address) changes.push(`Dirección: ${oldCompany.address} -> ${updatedCompany.address}`);
-
-    setCompanies(companies.map(c => c.id === updatedCompany.id ? updatedCompany : c));
-    if (changes.length > 0) {
-      addToLog(updatedCompany.id, 'Edición', changes.join(', '));
+    try {
+      await addLogEntry(entry);
+    } catch (e) {
+      console.error('Failed to save audit log:', e);
     }
+  };
+
+  const handleAddCompany = async (newCompany) => {
+    try {
+      const added = await addCompany(newCompany);
+      addToLog(added.id, 'Creación', 'Empresa registrada en el sistema');
+      console.log("Empresa creada:", added);
+    } catch (error) {
+      console.error('Error al crear empresa:', error);
+      alert('Error al crear empresa: ' + error.message);
+    }
+  };
+
+  const handleUpdateCompany = async (updatedCompany) => {
+    try {
+      // Clone the previous state before Firestore updates it
+      const oldCompany = companies.find(c => c.id === updatedCompany.id);
+      const oldCopy = oldCompany ? { ...oldCompany } : null;
+
+      // Update in Firestore
+      await updateCompany(updatedCompany.id, updatedCompany);
+
+      // Determine what actually changed
+      const changes = [];
+      if (oldCopy) {
+        if (oldCopy.name !== updatedCompany.name) {
+          changes.push(`Nombre: ${oldCopy.name} -> ${updatedCompany.name}`);
+        }
+        if (oldCopy.legalName !== updatedCompany.legalName) {
+          changes.push(`Razón Social: ${oldCopy.legalName || 'N/A'} -> ${updatedCompany.legalName}`);
+        }
+        if (oldCopy.rfc !== updatedCompany.rfc) {
+          changes.push(`RFC: ${oldCopy.rfc || 'N/A'} -> ${updatedCompany.rfc}`);
+        }
+      }
+
+      if (changes.length > 0) {
+        addToLog(updatedCompany.id, 'Edición', changes.join(', '));
+      }
+    } catch (error) {
+      console.error('Error al actualizar empresa:', error);
+      alert('Error al actualizar empresa: ' + error.message);
+    }
+  };
+
+  const handleAddUser = async (newUser) => {
+    try {
+      await addUser(newUser);
+    } catch (error) {
+      alert('Error al crear usuario: ' + error.message);
+    }
+  };
+
+  const handleUpdateUser = async (updatedUser) => {
+    try {
+      await updateUser(updatedUser.id, updatedUser);
+    } catch (error) {
+      alert('Error al actualizar usuario: ' + error.message);
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (window.confirm('¿Estás seguro de eliminar este usuario?')) {
+      try {
+        await deleteUser(userId);
+      } catch (error) {
+        alert('Error al eliminar usuario: ' + error.message);
+      }
+    }
+  };
+
+  const handleAddEmployee = async (newEmployee) => {
+    try {
+      await addEmployee(newEmployee);
+    } catch (error) {
+      alert('Error al crear empleado: ' + error.message);
+    }
+  };
+
+  const handleUpdateEmployee = async (updatedEmployee) => {
+    try {
+      await updateEmployee(updatedEmployee.id, updatedEmployee);
+    } catch (error) {
+      alert('Error al actualizar empleado: ' + error.message);
+    }
+  };
+
+  const handleDeleteEmployee = async (employeeId) => {
+    if (window.confirm('¿Estás seguro de eliminar este empleado?')) {
+      try {
+        await deleteEmployee(employeeId);
+      } catch (error) {
+        alert('Error al eliminar empleado: ' + error.message);
+      }
+    }
+  };
+
+  // Filter companies based on user role
+  const getAccessibleCompanies = () => {
+    if (user.role === 'super_admin') {
+      return companies;
+    } else if (user.role === 'company_admin' && user.companyId) {
+      return companies.filter(c => c.id == user.companyId);
+    }
+    return [];
   };
 
   const renderView = () => {
@@ -95,7 +218,7 @@ const AppContent = () => {
       case 'dashboard':
         return (
           <Dashboard
-            companiesCount={companies.length}
+            companiesCount={getAccessibleCompanies().length}
             employeesCount={employees.length}
             payrollsCount={payrolls.filter(p => p.status === 'Pendiente').length}
           />
@@ -103,10 +226,41 @@ const AppContent = () => {
       case 'companies':
         return (
           <CompanyList
-            companies={companies}
+            companies={getAccessibleCompanies()}
             onAddCompany={handleAddCompany}
             onUpdateCompany={handleUpdateCompany}
             auditLog={auditLog}
+            userRole={user.role}
+          />
+        );
+      case 'users':
+        // Solo super_admin puede ver usuarios
+        if (user.role !== 'super_admin') {
+          return (
+            <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
+              <h2 style={{ color: 'var(--text-secondary)' }}>Acceso denegado</h2>
+            </div>
+          );
+        }
+        return (
+          <UserList
+            users={users}
+            companies={companies}
+            onAddUser={handleAddUser}
+            onUpdateUser={handleUpdateUser}
+            onDeleteUser={handleDeleteUser}
+          />
+        );
+      case 'employees':
+        return (
+          <EmployeeList
+            employees={employees}
+            companies={companies}
+            onAddEmployee={handleAddEmployee}
+            onUpdateEmployee={handleUpdateEmployee}
+            onDeleteEmployee={handleDeleteEmployee}
+            userRole={user.role}
+            userCompanyId={user.companyId}
           />
         );
       default:

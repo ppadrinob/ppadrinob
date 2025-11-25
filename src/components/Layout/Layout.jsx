@@ -1,7 +1,9 @@
 import React from 'react';
+import { useAuth } from '../../context/AuthContext';
 import '../../styles/index.css';
 
 const Layout = ({ children, currentView, onNavigate }) => {
+    const { user } = useAuth();
     return (
         <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-color)' }}>
             {/* Sidebar */}
@@ -16,14 +18,17 @@ const Layout = ({ children, currentView, onNavigate }) => {
                     <NavItem label="Empleados" active={currentView === 'employees'} onClick={() => onNavigate('employees')} />
                     <NavItem label="Nómina" active={currentView === 'payroll'} onClick={() => onNavigate('payroll')} />
                     <NavItem label="Reportes" active={currentView === 'reports'} onClick={() => onNavigate('reports')} />
+                    {user?.role === 'super_admin' && (
+                        <NavItem label="Usuarios" active={currentView === 'users'} onClick={() => onNavigate('users')} />
+                    )}
                 </nav>
 
                 <div style={{ marginTop: 'auto' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--surface-color)' }}>
                         <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--primary-color)' }}></div>
                         <div style={{ flex: 1 }}>
-                            <p style={{ fontSize: '0.875rem', fontWeight: '500' }}>Admin User</p>
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>admin@demo.com</p>
+                            <p style={{ fontSize: '0.875rem', fontWeight: '500' }}>{user?.name}</p>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{user?.email}</p>
                         </div>
                         <button
                             onClick={() => {

@@ -7,6 +7,19 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Inicializar usuarios si no existen
+        const storedUsers = localStorage.getItem('app_users');
+        if (!storedUsers) {
+            const defaultAdmin = {
+                id: 1,
+                name: 'Admin User',
+                email: 'admin@demo.com',
+                password: 'admin123',
+                role: 'super_admin'
+            };
+            localStorage.setItem('app_users', JSON.stringify([defaultAdmin]));
+        }
+
         // Simular persistencia de sesión
         const storedUser = localStorage.getItem('payroll_user');
         if (storedUser) {
@@ -16,18 +29,20 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = (email, password) => {
-        // Simulación de validación contra "base de datos"
         return new Promise((resolve, reject) => {
             setTimeout(() => {
-                if (email === 'admin@demo.com' && password === 'admin123') {
-                    const userData = { name: 'Admin User', email, role: 'admin' };
-                    setUser(userData);
-                    localStorage.setItem('payroll_user', JSON.stringify(userData));
-                    resolve(userData);
+                const users = JSON.parse(localStorage.getItem('app_users') || '[]');
+                const foundUser = users.find(u => u.email === email && u.password === password);
+
+                if (foundUser) {
+                    const { password, ...userWithoutPassword } = foundUser; // No guardar password en sesión
+                    setUser(userWithoutPassword);
+                    localStorage.setItem('payroll_user', JSON.stringify(userWithoutPassword));
+                    resolve(userWithoutPassword);
                 } else {
                     reject(new Error('Credenciales inválidas'));
                 }
-            }, 800); // Simular delay de red
+            }, 800);
         });
     };
 
