@@ -94,24 +94,27 @@ const CompanyDetails = ({ company, onClose, auditLog }) => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {auditLog.filter(log => log.companyId === company.id).map(log => (
-                                        <tr key={log.id} style={{ borderTop: '1px solid var(--border-color)' }}>
-                                            <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>{new Date(log.timestamp).toLocaleString()}</td>
-                                            <td style={{ padding: '0.5rem' }}>{log.user}</td>
-                                            <td style={{ padding: '0.5rem' }}>
-                                                <span style={{
-                                                    padding: '0.25rem 0.5rem',
-                                                    borderRadius: '4px',
-                                                    backgroundColor: log.action === 'Creación' ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 165, 0, 0.1)',
-                                                    color: log.action === 'Creación' ? '#4ade80' : '#fbbf24',
-                                                    fontSize: '0.75rem'
-                                                }}>
-                                                    {log.action}
-                                                </span>
-                                            </td>
-                                            <td style={{ padding: '0.5rem' }}>{log.details}</td>
-                                        </tr>
-                                    ))}
+                                    {auditLog
+                                        .filter(log => log.companyId === company.id)
+                                        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                                        .map(log => (
+                                            <tr key={log.id} style={{ borderTop: '1px solid var(--border-color)' }}>
+                                                <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>{new Date(log.timestamp).toLocaleString()}</td>
+                                                <td style={{ padding: '0.5rem' }}>{log.user}</td>
+                                                <td style={{ padding: '0.5rem' }}>
+                                                    <span style={{
+                                                        padding: '0.25rem 0.5rem',
+                                                        borderRadius: '4px',
+                                                        backgroundColor: log.action === 'Creación' ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 165, 0, 0.1)',
+                                                        color: log.action === 'Creación' ? '#4ade80' : '#fbbf24',
+                                                        fontSize: '0.75rem'
+                                                    }}>
+                                                        {log.action}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '0.5rem' }}>{log.details}</td>
+                                            </tr>
+                                        ))}
                                 </tbody>
                             </table>
                         ) : (

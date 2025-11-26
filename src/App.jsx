@@ -163,7 +163,14 @@ const AppContent = () => {
 
   const handleAddUser = async (newUser) => {
     try {
-      await addUser(newUser);
+      // Hash password before saving
+      const { hashPassword } = await import('./utils/security');
+      const hashedPassword = await hashPassword(newUser.password);
+
+      const userToSave = { ...newUser, password: hashedPassword };
+
+      const addedUser = await addUser(userToSave);
+      addToLog(addedUser.id, 'Creación', 'Usuario registrado en el sistema');
     } catch (error) {
       alert('Error al crear usuario: ' + error.message);
     }
@@ -171,7 +178,36 @@ const AppContent = () => {
 
   const handleUpdateUser = async (updatedUser) => {
     try {
-      await updateUser(updatedUser.id, updatedUser);
+      // Get old user data for comparison
+      const oldUser = users.find(u => u.id === updatedUser.id);
+      const oldCopy = oldUser ? { ...oldUser } : null;
+
+      // Only update the fields that are provided
+      const updateData = { ...updatedUser };
+      // Remove the id from the update data as it's not a field to update
+      delete updateData.id;
+
+      // If password is being updated, hash it
+      if (updateData.password) {
+        const { hashPassword } = await import('./utils/security');
+        updateData.password = await hashPassword(updateData.password);
+      }
+
+      await updateUser(updatedUser.id, updateData);
+
+      // Log changes
+      const changes = [];
+      if (oldCopy) {
+        if (oldCopy.name !== updatedUser.name) changes.push(`Nombre: ${oldCopy.name} -> ${updatedUser.name}`);
+        if (oldCopy.email !== updatedUser.email) changes.push(`Email: ${oldCopy.email} -> ${updatedUser.email}`);
+        if (oldCopy.role !== updatedUser.role) changes.push(`Rol: ${oldCopy.role} -> ${updatedUser.role}`);
+        if (oldCopy.companyId !== updatedUser.companyId) changes.push(`Empresa ID: ${oldCopy.companyId || 'N/A'} -> ${updatedUser.companyId || 'N/A'}`);
+        if (updateData.password) changes.push('Contraseña actualizada');
+      }
+
+      if (changes.length > 0) {
+        addToLog(updatedUser.id, 'Edición', changes.join(', '));
+      }
     } catch (error) {
       alert('Error al actualizar usuario: ' + error.message);
     }
@@ -181,6 +217,7 @@ const AppContent = () => {
     if (window.confirm('¿Estás seguro de eliminar este usuario?')) {
       try {
         await deleteUser(userId);
+        addToLog(userId, 'Eliminación', 'Usuario eliminado del sistema');
       } catch (error) {
         alert('Error al eliminar usuario: ' + error.message);
       }
@@ -259,6 +296,7 @@ const AppContent = () => {
             onAddUser={handleAddUser}
             onUpdateUser={handleUpdateUser}
             onDeleteUser={handleDeleteUser}
+            auditLog={auditLog}
           />
         );
       case 'employees':

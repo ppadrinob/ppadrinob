@@ -1,28 +1,41 @@
 import React, { useState } from 'react';
 import UserForm from './UserForm';
+import UserDetails from './UserDetails';
 import '../../../styles/index.css';
 
-const UserList = ({ users, companies, onAddUser, onUpdateUser, onDeleteUser }) => {
+const UserList = ({ users, companies, onAddUser, onUpdateUser, onDeleteUser, auditLog }) => {
     const [isCreating, setIsCreating] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
+    const [viewingUser, setViewingUser] = useState(null);
 
-    const handleSave = (userData) => {
-        if (editingUser) {
-            onUpdateUser({ ...editingUser, ...userData });
-            setEditingUser(null);
-        } else {
-            onAddUser({ ...userData, id: Date.now() });
-            setIsCreating(false);
+    const handleSave = async (userData) => {
+        try {
+            if (editingUser) {
+                await onUpdateUser({ ...editingUser, ...userData });
+                setEditingUser(null);
+            } else {
+                // Don't add id - Firestore will generate it
+                await onAddUser(userData);
+                setIsCreating(false);
+            }
+        } catch (error) {
+            console.error('Error saving user:', error);
+            alert('Error al guardar usuario: ' + error.message);
         }
     };
 
     const handleCancel = () => {
         setIsCreating(false);
         setEditingUser(null);
+        setViewingUser(null);
     };
 
     if (isCreating || editingUser) {
         return <UserForm onSave={handleSave} onCancel={handleCancel} initialData={editingUser} companies={companies} />;
+    }
+
+    if (viewingUser) {
+        return <UserDetails user={viewingUser} onClose={handleCancel} auditLog={auditLog} companies={companies} />;
     }
 
     return (
@@ -83,6 +96,11 @@ const UserList = ({ users, companies, onAddUser, onUpdateUser, onDeleteUser }) =
                                         {user.role === 'company_admin' ? (assignedCompany?.name || 'No asignada') : '-'}
                                     </td>
                                     <td style={{ padding: '1rem' }}>
+                                        <button
+                                            onClick={() => setViewingUser(user)}
+                                            style={{ color: 'var(--text-primary)', background: 'transparent', marginRight: '1rem', cursor: 'pointer' }}
+                                            title="Ver Detalles"
+                                        >👁️</button>
                                         <button
                                             onClick={() => setEditingUser(user)}
                                             style={{ color: 'var(--primary-color)', background: 'transparent', marginRight: '1rem', cursor: 'pointer' }}

@@ -127,7 +127,9 @@ export const addUser = async (userData) => {
 
 export const updateUser = async (id, userData) => {
     try {
-        const userRef = doc(db, 'app_users', id);
+        // Ensure ID is a string
+        const stringId = String(id);
+        const userRef = doc(db, 'app_users', stringId);
         await updateDoc(userRef, userData);
     } catch (error) {
         console.error("Error updating user: ", error);

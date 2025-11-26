@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Rescue</title>
+</head>
+
+<body>
+    <h1>Firebase Rescue Admin</h1>
+    <button id="btn" onclick="resetRescuePassword()">Reset Rescue Password to 'admin123'</button>
+    <div id="output" style="margin-top: 20px; font-family: monospace;"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, updateDoc, query, where, doc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEKgyUutq_Jr2TCbdNIk_6Slvg-vJ8IuY",
+            authDomain: "payroll-admin-22606.firebaseapp.com",
+            projectId: "payroll-admin-22606",
+            storageBucket: "payroll-admin-22606.firebasestorage.app",
+            messagingSenderId: "828877835628",
+            appId: "1:828877835628:web:871fdf8009c96698de3749"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.resetRescuePassword = async () => {
+            const output = document.getElementById('output');
+            output.innerHTML = 'Processing...';
+
+            try {
+                const usersRef = collection(db, 'app_users');
+                const q = query(usersRef, where('email', '==', 'rescue@demo.com'));
+                const snapshot = await getDocs(q);
+
+                if (snapshot.empty) {
+                    output.innerHTML = 'User rescue@demo.com not found.';
+                    return;
+                }
+
+                const userDoc = snapshot.docs[0];
+                const userRef = doc(db, 'app_users', userDoc.id);
+
+                // Reset to PLAIN TEXT 'admin123'
+                await updateDoc(userRef, { password: 'admin123' });
+
+                output.innerHTML = 'Success! Password reset to "admin123" (plain text).';
+            } catch (error) {
+                output.innerHTML = 'Error: ' + error.message;
+                console.error(error);
+            }
+        };
+    </script>
+</body>
+
+</html>
