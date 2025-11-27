@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import EmployeeForm from './EmployeeForm';
+import EmployeeDetails from './EmployeeDetails';
 import '../../../styles/index.css';
 
-const EmployeeList = ({ employees, companies, onAddEmployee, onUpdateEmployee, onDeleteEmployee, userRole, userCompanyId }) => {
+const EmployeeList = ({ employees, companies, onAddEmployee, onUpdateEmployee, onDeleteEmployee, userRole, userCompanyId, auditLog }) => {
     const [isCreating, setIsCreating] = useState(false);
     const [editingEmployee, setEditingEmployee] = useState(null);
+    const [viewingEmployee, setViewingEmployee] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
 
     // Filter employees based on user role
@@ -21,10 +23,11 @@ const EmployeeList = ({ employees, companies, onAddEmployee, onUpdateEmployee, o
     const handleSave = async (employeeData) => {
         try {
             if (editingEmployee) {
-                await onUpdateEmployee({ ...editingEmployee, ...employeeData });
+                await onUpdateEmployee({ ...employeeData, id: editingEmployee.id });
                 setEditingEmployee(null);
             } else {
-                await onAddEmployee({ ...employeeData, id: Date.now() });
+                // Don't pass an ID, let Firebase generate it
+                await onAddEmployee(employeeData);
                 setIsCreating(false);
             }
         } catch (error) {
@@ -36,12 +39,28 @@ const EmployeeList = ({ employees, companies, onAddEmployee, onUpdateEmployee, o
     const handleCancel = () => {
         setIsCreating(false);
         setEditingEmployee(null);
+        setViewingEmployee(null);
     };
 
     const getCompanyName = (companyId) => {
         const company = companies.find(c => c.id == companyId);
         return company ? company.name : 'N/A';
     };
+
+    if (viewingEmployee) {
+        return (
+            <EmployeeDetails
+                employee={viewingEmployee}
+                companies={companies}
+                auditLog={auditLog}
+                onClose={() => setViewingEmployee(null)}
+                onEdit={() => {
+                    setEditingEmployee(viewingEmployee);
+                    setViewingEmployee(null);
+                }}
+            />
+        );
+    }
 
     if (isCreating || editingEmployee) {
         return (
@@ -143,12 +162,20 @@ const EmployeeList = ({ employees, companies, onAddEmployee, onUpdateEmployee, o
                                         </span>
                                     </td>
                                     <td style={{ padding: '1rem' }}>
-                                        <button
-                                            onClick={() => setEditingEmployee(employee)}
-                                            style={{ color: 'var(--primary-color)', background: 'transparent', cursor: 'pointer' }}
-                                        >
-                                            Editar
-                                        </button>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button
+                                                onClick={() => setViewingEmployee(employee)}
+                                                style={{ color: 'var(--secondary-color)', background: 'transparent', cursor: 'pointer' }}
+                                            >
+                                                Ver
+                                            </button>
+                                            <button
+                                                onClick={() => setEditingEmployee(employee)}
+                                                style={{ color: 'var(--primary-color)', background: 'transparent', cursor: 'pointer' }}
+                                            >
+                                                Editar
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))

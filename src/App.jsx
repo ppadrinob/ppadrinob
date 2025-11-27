@@ -226,16 +226,58 @@ const AppContent = () => {
 
   const handleAddEmployee = async (newEmployee) => {
     try {
-      await addEmployee(newEmployee);
+      const added = await addEmployee(newEmployee);
+      addToLog(added.id, 'Creación Empleado', `Empleado ${newEmployee.firstName} ${newEmployee.firstLastName} registrado en el sistema`);
+      console.log("Empleado creado:", added);
+      return added;
     } catch (error) {
+      console.error('Error al crear empleado:', error);
       alert('Error al crear empleado: ' + error.message);
+      throw error;
     }
   };
 
   const handleUpdateEmployee = async (updatedEmployee) => {
     try {
-      await updateEmployee(updatedEmployee.id, updatedEmployee);
+      // Clone the previous state before Firestore updates it
+      const oldEmployee = employees.find(e => e.id === updatedEmployee.id);
+      const oldCopy = oldEmployee ? { ...oldEmployee } : null;
+
+      // Update in Firestore (remove id from the data)
+      const { id, ...employeeDataWithoutId } = updatedEmployee;
+      await updateEmployee(id, employeeDataWithoutId);
+
+      // Determine what actually changed
+      const changes = [];
+      if (oldCopy) {
+        if (oldCopy.firstName !== updatedEmployee.firstName) {
+          changes.push(`Primer Nombre: ${oldCopy.firstName} -> ${updatedEmployee.firstName}`);
+        }
+        if (oldCopy.firstLastName !== updatedEmployee.firstLastName) {
+          changes.push(`Primer Apellido: ${oldCopy.firstLastName} -> ${updatedEmployee.firstLastName}`);
+        }
+        if (oldCopy.documentNumber !== updatedEmployee.documentNumber) {
+          changes.push(`Documento: ${oldCopy.documentNumber} -> ${updatedEmployee.documentNumber}`);
+        }
+        if (oldCopy.position !== updatedEmployee.position) {
+          changes.push(`Cargo: ${oldCopy.position || 'N/A'} -> ${updatedEmployee.position}`);
+        }
+        if (oldCopy.salary !== updatedEmployee.salary) {
+          changes.push(`Salario: ${oldCopy.salary || 'N/A'} -> ${updatedEmployee.salary}`);
+        }
+        if (oldCopy.status !== updatedEmployee.status) {
+          changes.push(`Estado: ${oldCopy.status} -> ${updatedEmployee.status}`);
+        }
+        if (oldCopy.email !== updatedEmployee.email) {
+          changes.push(`Email: ${oldCopy.email || 'N/A'} -> ${updatedEmployee.email || 'N/A'}`);
+        }
+      }
+
+      if (changes.length > 0) {
+        addToLog(updatedEmployee.id, 'Edición Empleado', changes.join(', '));
+      }
     } catch (error) {
+      console.error('Error al actualizar empleado:', error);
       alert('Error al actualizar empleado: ' + error.message);
     }
   };
@@ -243,7 +285,11 @@ const AppContent = () => {
   const handleDeleteEmployee = async (employeeId) => {
     if (window.confirm('¿Estás seguro de eliminar este empleado?')) {
       try {
+        const employee = employees.find(e => e.id === employeeId);
         await deleteEmployee(employeeId);
+        if (employee) {
+          addToLog(employeeId, 'Eliminación Empleado', `Empleado ${employee.firstName} ${employee.firstLastName} eliminado del sistema`);
+        }
       } catch (error) {
         alert('Error al eliminar empleado: ' + error.message);
       }
@@ -309,6 +355,7 @@ const AppContent = () => {
             onDeleteEmployee={handleDeleteEmployee}
             userRole={user.role}
             userCompanyId={user.companyId}
+            auditLog={auditLog}
           />
         );
       default:
@@ -320,8 +367,10 @@ const AppContent = () => {
     }
   };
 
+  const userCompany = companies.find(c => c.id == user.companyId);
+
   return (
-    <Layout currentView={currentView} onNavigate={setCurrentView}>
+    <Layout currentView={currentView} onNavigate={setCurrentView} userCompany={userCompany}>
       {renderView()}
     </Layout>
   );

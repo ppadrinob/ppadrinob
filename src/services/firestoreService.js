@@ -83,7 +83,9 @@ export const addEmployee = async (employeeData) => {
 // Actualizar empleado
 export const updateEmployee = async (id, employeeData) => {
     try {
-        const employeeRef = doc(db, 'employees', id);
+        // Ensure ID is a string
+        const stringId = String(id);
+        const employeeRef = doc(db, 'employees', stringId);
         await updateDoc(employeeRef, employeeData);
     } catch (error) {
         console.error("Error updating employee: ", error);

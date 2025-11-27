@@ -127,7 +127,7 @@ const EmployeeForm = ({ onSave, onCancel, initialData, companies, userRole, user
 
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Primer Apellido</label>
-                            <input type="text" name="firstName" value={formData.firstLastName} onChange={handleChange} required style={inputStyle} />
+                            <input type="text" name="firstLastName" value={formData.firstLastName} onChange={handleChange} required style={inputStyle} />
                         </div>
 
                         <div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import '../../../styles/index.css';
+import { MODULES } from '../../../config/modules';
 
 const CompanyForm = ({ onSave, onCancel, initialData = null }) => {
     const [formData, setFormData] = useState({
@@ -7,12 +8,22 @@ const CompanyForm = ({ onSave, onCancel, initialData = null }) => {
         legalName: initialData?.legalName || '',
         rfc: initialData?.rfc || '',
         employerReg: initialData?.employerReg || '',
-        address: initialData?.address || ''
+        address: initialData?.address || '',
+        activeModules: initialData?.activeModules || ['nomina']
     });
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleModuleToggle = (moduleId) => {
+        setFormData(prev => {
+            const activeModules = prev.activeModules.includes(moduleId)
+                ? prev.activeModules.filter(id => id !== moduleId)
+                : [...prev.activeModules, moduleId];
+            return { ...prev, activeModules };
+        });
     };
 
     const handleSubmit = (e) => {
@@ -79,6 +90,23 @@ const CompanyForm = ({ onSave, onCancel, initialData = null }) => {
                         rows="3"
                         style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.2)', color: 'var(--text-primary)', resize: 'vertical' }}
                     />
+                </div>
+
+                <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Módulos Activos</label>
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                        {Object.values(MODULES).map(module => (
+                            <label key={module.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.05)', border: formData.activeModules.includes(module.id) ? '1px solid var(--primary-color)' : '1px solid transparent' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={formData.activeModules.includes(module.id)}
+                                    onChange={() => handleModuleToggle(module.id)}
+                                    style={{ accentColor: 'var(--primary-color)' }}
+                                />
+                                {module.label}
+                            </label>
+                        ))}
+                    </div>
                 </div>
 
                 <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>

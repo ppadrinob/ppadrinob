@@ -1,5 +1,6 @@
 import React from 'react';
 import '../../../styles/index.css';
+import { MODULES } from '../../../config/modules';
 
 const CompanyDetails = ({ company, onClose, auditLog }) => {
     if (!company) return null;
@@ -59,6 +60,21 @@ const CompanyDetails = ({ company, onClose, auditLog }) => {
                     <div>
                         <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Dirección Fiscal</label>
                         <p style={{ fontSize: '1rem', lineHeight: '1.6' }}>{company.address || 'Sin dirección registrada'}</p>
+                    </div>
+                </div>
+
+                {/* Módulos Activos */}
+                <div className="glass-panel" style={{ padding: '1.5rem', backgroundColor: 'rgba(0,0,0,0.2)' }}>
+                    <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Módulos Activos</h3>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {(company.activeModules || ['nomina']).map(moduleId => {
+                            const moduleConfig = Object.values(MODULES).find(m => m.id === moduleId);
+                            return (
+                                <span key={moduleId} style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', backgroundColor: 'var(--primary-color)', color: 'white', fontSize: '0.875rem' }}>
+                                    {moduleConfig?.label || moduleId}
+                                </span>
+                            );
+                        })}
                     </div>
                 </div>
 
