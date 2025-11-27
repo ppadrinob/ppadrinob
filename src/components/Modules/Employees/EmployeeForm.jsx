@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { documentTypes } from '../../../data/documentTypes';
 import { getCitiesSorted } from '../../../data/colombianCities';
+import { colombianBanks } from '../../../data/colombianBanks';
+import { colombianEPS } from '../../../data/colombianEPS';
 import '../../../styles/index.css';
 
 const EmployeeForm = ({ onSave, onCancel, initialData, companies, userRole, userCompanyId }) => {
@@ -263,23 +265,7 @@ const EmployeeForm = ({ onSave, onCancel, initialData, companies, userRole, user
                             </select>
                         </div>
 
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Banco</label>
-                            <input type="text" name="bank" value={formData.bank} onChange={handleChange} style={inputStyle} />
-                        </div>
 
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Tipo Cuenta</label>
-                            <select name="accountType" value={formData.accountType} onChange={handleChange} style={inputStyle}>
-                                <option value="Ahorros">Ahorros</option>
-                                <option value="Corriente">Corriente</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Número Cuenta</label>
-                            <input type="text" name="accountNumber" value={formData.accountNumber} onChange={handleChange} style={inputStyle} />
-                        </div>
 
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Tipo Contrato</label>
@@ -324,6 +310,39 @@ const EmployeeForm = ({ onSave, onCancel, initialData, companies, userRole, user
                     </div>
                 </div>
 
+                {/* Información Bancaria */}
+                <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '1.5rem', backgroundColor: 'rgba(0,0,0,0.2)' }}>
+                    <h3 style={{ color: 'var(--secondary-color)', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                        Información Bancaria
+                    </h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Banco</label>
+                            <select name="bank" value={formData.bank} onChange={handleChange} style={inputStyle}>
+                                <option value="">Seleccione un banco</option>
+                                {colombianBanks.map(bank => (
+                                    <option key={bank.code} value={bank.code}>
+                                        {bank.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Tipo de Cuenta</label>
+                            <select name="accountType" value={formData.accountType} onChange={handleChange} style={inputStyle}>
+                                <option value="Ahorros">Ahorros</option>
+                                <option value="Corriente">Corriente</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Número de Cuenta</label>
+                            <input type="text" name="accountNumber" value={formData.accountNumber} onChange={handleChange} style={inputStyle} />
+                        </div>
+                    </div>
+                </div>
+
                 {/* Aportes */}
                 <div className="glass-panel" style={{ padding: '1.5rem', backgroundColor: 'rgba(0,0,0,0.2)' }}>
                     <h3 style={{ color: 'var(--accent-color)', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
@@ -332,7 +351,14 @@ const EmployeeForm = ({ onSave, onCancel, initialData, companies, userRole, user
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Salud (EPS)</label>
-                            <input type="text" name="healthProvider" value={formData.healthProvider} onChange={handleChange} style={inputStyle} />
+                            <select name="healthProvider" value={formData.healthProvider} onChange={handleChange} style={inputStyle}>
+                                <option value="">Seleccione una EPS</option>
+                                {colombianEPS.map(eps => (
+                                    <option key={eps.code} value={eps.code}>
+                                        {eps.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         <div>

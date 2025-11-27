@@ -271,6 +271,18 @@ const AppContent = () => {
         if (oldCopy.email !== updatedEmployee.email) {
           changes.push(`Email: ${oldCopy.email || 'N/A'} -> ${updatedEmployee.email || 'N/A'}`);
         }
+
+        if (oldCopy.bank !== updatedEmployee.bank) {
+          const oldBank = getBankName(oldCopy.bank);
+          const newBank = getBankName(updatedEmployee.bank);
+          changes.push(`Banco: ${oldBank} -> ${newBank}`);
+        }
+        if (oldCopy.accountType !== updatedEmployee.accountType) {
+          changes.push(`Tipo Cuenta: ${oldCopy.accountType || 'N/A'} -> ${updatedEmployee.accountType}`);
+        }
+        if (oldCopy.accountNumber !== updatedEmployee.accountNumber) {
+          changes.push(`No. Cuenta: ${oldCopy.accountNumber || 'N/A'} -> ${updatedEmployee.accountNumber}`);
+        }
       }
 
       if (changes.length > 0) {

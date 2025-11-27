@@ -162,20 +162,12 @@ const EmployeeList = ({ employees, companies, onAddEmployee, onUpdateEmployee, o
                                         </span>
                                     </td>
                                     <td style={{ padding: '1rem' }}>
-                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            <button
-                                                onClick={() => setViewingEmployee(employee)}
-                                                style={{ color: 'var(--secondary-color)', background: 'transparent', cursor: 'pointer' }}
-                                            >
-                                                Ver
-                                            </button>
-                                            <button
-                                                onClick={() => setEditingEmployee(employee)}
-                                                style={{ color: 'var(--primary-color)', background: 'transparent', cursor: 'pointer' }}
-                                            >
-                                                Editar
-                                            </button>
-                                        </div>
+                                        <button
+                                            onClick={() => setViewingEmployee(employee)}
+                                            style={{ color: 'var(--secondary-color)', background: 'transparent', cursor: 'pointer' }}
+                                        >
+                                            Ver
+                                        </button>
                                     </td>
                                 </tr>
                             ))

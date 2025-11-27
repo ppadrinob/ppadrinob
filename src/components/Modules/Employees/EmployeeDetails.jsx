@@ -1,10 +1,34 @@
 import React from 'react';
+import { documentTypes } from '../../../data/documentTypes';
+import { getCitiesSorted } from '../../../data/colombianCities';
+import { getBankName } from '../../../data/colombianBanks';
+import { getEPSName } from '../../../data/colombianEPS';
 import '../../../styles/index.css';
 
 const EmployeeDetails = ({ employee, companies, auditLog, onClose, onEdit }) => {
     const getCompanyName = (companyId) => {
         const company = companies.find(c => c.id == companyId);
         return company ? company.name : 'N/A';
+    };
+
+    const getDocumentTypeName = (code) => {
+        const docType = documentTypes.find(dt => dt.code === code);
+        return docType ? docType.name : code;
+    };
+
+    const getCityName = (code) => {
+        if (!code) return 'N/A';
+        const city = getCitiesSorted().find(c => c.code === code);
+        return city ? `${city.name} - ${city.department}` : code;
+    };
+
+    const getGenderName = (code) => {
+        const genders = {
+            'M': 'Masculino',
+            'F': 'Femenino',
+            'Otro': 'Otro'
+        };
+        return genders[code] || code;
     };
 
     // Filter audit log for this employee
@@ -53,16 +77,16 @@ const EmployeeDetails = ({ employee, companies, auditLog, onClose, onEdit }) => 
                     Datos Generales
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-                    <DetailField label="Tipo Documento" value={employee.documentType} />
+                    <DetailField label="Tipo Documento" value={getDocumentTypeName(employee.documentType)} />
                     <DetailField label="Número Documento" value={employee.documentNumber} />
                     <DetailField label="Nombre Completo" value={`${employee.firstName} ${employee.secondName || ''} ${employee.firstLastName} ${employee.secondLastName || ''}`.trim()} />
                     <DetailField label="Fecha Nacimiento" value={employee.birthDate} />
-                    <DetailField label="Género" value={employee.gender} />
+                    <DetailField label="Género" value={getGenderName(employee.gender)} />
                     <DetailField label="Estado Civil" value={employee.civilStatus} />
                     <DetailField label="Email" value={employee.email} />
                     <DetailField label="Teléfono" value={employee.phone} />
                     <DetailField label="Dirección" value={employee.address} />
-                    <DetailField label="Ciudad" value={employee.city} />
+                    <DetailField label="Ciudad" value={getCityName(employee.city)} />
                 </div>
             </div>
 
@@ -79,25 +103,21 @@ const EmployeeDetails = ({ employee, companies, auditLog, onClose, onEdit }) => 
                     <DetailField label="Fecha Retiro" value={employee.endDate || 'N/A'} />
                     <DetailField label="Tipo Contrato" value={employee.contractType} />
                     <DetailField label="Estado" value={employee.status} />
-                    <DetailField label="Banco" value={employee.bank} />
+                </div>
+            </div>
+
+            {/* Información Bancaria */}
+            <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '1.5rem', backgroundColor: 'rgba(0,0,0,0.2)' }}>
+                <h3 style={{ color: 'var(--secondary-color)', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                    Información Bancaria
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+                    <DetailField label="Banco" value={getBankName(employee.bank)} />
                     <DetailField label="Tipo Cuenta" value={employee.accountType} />
                     <DetailField label="Número Cuenta" value={employee.accountNumber} />
                 </div>
             </div>
 
-            {/* Aportes */}
-            <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '1.5rem', backgroundColor: 'rgba(0,0,0,0.2)' }}>
-                <h3 style={{ color: 'var(--accent-color)', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-                    Aportes
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-                    <DetailField label="EPS" value={employee.healthProvider} />
-                    <DetailField label="Caja Compensación" value={employee.compensationFund} />
-                    <DetailField label="Pensión" value={employee.pensionFund} />
-                    <DetailField label="ARL" value={employee.arl} />
-                    <DetailField label="Porcentaje ARL" value={employee.arlPercentage ? `${employee.arlPercentage}%` : 'N/A'} />
-                </div>
-            </div>
 
             {/* Bitácora de Cambios */}
             <div className="glass-panel" style={{ padding: '1.5rem', backgroundColor: 'rgba(0,0,0,0.2)' }}>
