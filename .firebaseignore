@@ -1,0 +1,7 @@
+# Firebase
+.firebase/
+.firebaserc
+
+# Build
+dist/
+build/
