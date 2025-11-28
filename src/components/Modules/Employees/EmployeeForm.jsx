@@ -3,9 +3,15 @@ import { documentTypes } from '../../../data/documentTypes';
 import { getCitiesSorted } from '../../../data/colombianCities';
 import { colombianBanks } from '../../../data/colombianBanks';
 import { colombianEPS } from '../../../data/colombianEPS';
+import { colombianCompensationFunds } from '../../../data/colombianCompensationFunds';
+import { colombianPensionFunds } from '../../../data/colombianPensionFunds';
+import { colombianARL } from '../../../data/colombianARL';
 import '../../../styles/index.css';
 
-const EmployeeForm = ({ onSave, onCancel, initialData, companies, userRole, userCompanyId }) => {
+import Modal from '../../UI/Modal';
+
+const EmployeeForm = ({ onSave, onCancel, initialData, companies, userRole, userCompanyId, employees = [], costCenters = [], setHasUnsavedChanges }) => {
+    const [errorModal, setErrorModal] = useState({ isOpen: false, message: '' });
     const [formData, setFormData] = useState({
         // Datos Generales
         documentType: '13', // Código del tipo de documento (por defecto CC)
@@ -68,11 +74,39 @@ const EmployeeForm = ({ onSave, onCancel, initialData, companies, userRole, user
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
+        if (setHasUnsavedChanges) {
+            setHasUnsavedChanges(true);
+        }
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
+
+        // Validar duplicados de documento
+        const duplicate = employees.find(emp =>
+            emp.documentNumber === formData.documentNumber &&
+            emp.id !== (initialData ? initialData.id : null)
+        );
+
+        if (duplicate) {
+            setErrorModal({
+                isOpen: true,
+                message: 'El número de documento ya existe en otro empleado.'
+            });
+            return;
+        }
+
+        if (setHasUnsavedChanges) {
+            setHasUnsavedChanges(false);
+        }
         onSave(formData);
+    };
+
+    const handleCancel = () => {
+        if (setHasUnsavedChanges) {
+            setHasUnsavedChanges(false);
+        }
+        onCancel();
     };
 
     return (
@@ -228,7 +262,22 @@ const EmployeeForm = ({ onSave, onCancel, initialData, companies, userRole, user
 
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Centro de Costo</label>
-                            <input type="text" name="costCenter" value={formData.costCenter} onChange={handleChange} style={inputStyle} />
+                            <select
+                                name="costCenter"
+                                value={formData.costCenter}
+                                onChange={handleChange}
+                                style={inputStyle}
+                            >
+                                <option value="">Seleccionar...</option>
+                                {costCenters
+                                    .filter(cc => cc.companyId === formData.companyId)
+                                    .map(center => (
+                                        <option key={center.id} value={center.id}>
+                                            {center.code} - {center.name}
+                                        </option>
+                                    ))
+                                }
+                            </select>
                         </div>
 
                         <div>
@@ -363,17 +412,38 @@ const EmployeeForm = ({ onSave, onCancel, initialData, companies, userRole, user
 
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Caja Compensación</label>
-                            <input type="text" name="compensationFund" value={formData.compensationFund} onChange={handleChange} style={inputStyle} />
+                            <select name="compensationFund" value={formData.compensationFund} onChange={handleChange} style={inputStyle}>
+                                <option value="">Seleccione una Caja</option>
+                                {colombianCompensationFunds.map(fund => (
+                                    <option key={fund.code} value={fund.code}>
+                                        {fund.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Pensión</label>
-                            <input type="text" name="pensionFund" value={formData.pensionFund} onChange={handleChange} style={inputStyle} />
+                            <select name="pensionFund" value={formData.pensionFund} onChange={handleChange} style={inputStyle}>
+                                <option value="">Seleccione un Fondo</option>
+                                {colombianPensionFunds.map(fund => (
+                                    <option key={fund.code} value={fund.code}>
+                                        {fund.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>ARL</label>
-                            <input type="text" name="arl" value={formData.arl} onChange={handleChange} style={inputStyle} />
+                            <select name="arl" value={formData.arl} onChange={handleChange} style={inputStyle}>
+                                <option value="">Seleccione una ARL</option>
+                                {colombianARL.map(arl => (
+                                    <option key={arl.code} value={arl.code}>
+                                        {arl.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         <div>
@@ -387,7 +457,7 @@ const EmployeeForm = ({ onSave, onCancel, initialData, companies, userRole, user
                 <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
                     <button
                         type="button"
-                        onClick={onCancel}
+                        onClick={handleCancel}
                         style={{
                             padding: '0.75rem 1.5rem',
                             borderRadius: 'var(--radius-md)',
@@ -415,6 +485,14 @@ const EmployeeForm = ({ onSave, onCancel, initialData, companies, userRole, user
                     </button>
                 </div>
             </form>
+
+            <Modal
+                isOpen={errorModal.isOpen}
+                onClose={() => setErrorModal({ ...errorModal, isOpen: false })}
+                title="Atención"
+            >
+                {errorModal.message}
+            </Modal>
         </div>
     );
 };

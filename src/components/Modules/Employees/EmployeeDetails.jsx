@@ -3,12 +3,21 @@ import { documentTypes } from '../../../data/documentTypes';
 import { getCitiesSorted } from '../../../data/colombianCities';
 import { getBankName } from '../../../data/colombianBanks';
 import { getEPSName } from '../../../data/colombianEPS';
+import { getCompensationFundName } from '../../../data/colombianCompensationFunds';
+import { getPensionFundName } from '../../../data/colombianPensionFunds';
+import { getARLName } from '../../../data/colombianARL';
 import '../../../styles/index.css';
 
-const EmployeeDetails = ({ employee, companies, auditLog, onClose, onEdit }) => {
+const EmployeeDetails = ({ employee, companies, costCenters, auditLog, onClose, onEdit }) => {
     const getCompanyName = (companyId) => {
         const company = companies.find(c => c.id == companyId);
         return company ? company.name : 'N/A';
+    };
+
+    const getCostCenterName = (costCenterId) => {
+        if (!costCenterId) return 'N/A';
+        const center = costCenters?.find(cc => cc.id === costCenterId);
+        return center ? `${center.code} - ${center.name}` : 'N/A';
     };
 
     const getDocumentTypeName = (code) => {
@@ -97,6 +106,7 @@ const EmployeeDetails = ({ employee, companies, auditLog, onClose, onEdit }) => 
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
                     <DetailField label="Empresa" value={getCompanyName(employee.companyId)} />
+                    <DetailField label="Centro de Costo" value={getCostCenterName(employee.costCenter)} />
                     <DetailField label="Cargo" value={employee.position} />
                     <DetailField label="Salario" value={`$${parseInt(employee.salary || 0).toLocaleString('es-CO')}`} />
                     <DetailField label="Fecha Ingreso" value={employee.startDate} />
@@ -118,6 +128,19 @@ const EmployeeDetails = ({ employee, companies, auditLog, onClose, onEdit }) => 
                 </div>
             </div>
 
+            {/* Aportes */}
+            <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '1.5rem', backgroundColor: 'rgba(0,0,0,0.2)' }}>
+                <h3 style={{ color: 'var(--accent-color)', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                    Aportes
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+                    <DetailField label="Salud (EPS)" value={getEPSName(employee.healthProvider)} />
+                    <DetailField label="Caja Compensación" value={getCompensationFundName(employee.compensationFund)} />
+                    <DetailField label="Pensión" value={getPensionFundName(employee.pensionFund)} />
+                    <DetailField label="ARL" value={getARLName(employee.arl)} />
+                    <DetailField label="Porcentaje ARL" value={employee.arlPercentage ? `${employee.arlPercentage}%` : 'N/A'} />
+                </div>
+            </div>
 
             {/* Bitácora de Cambios */}
             <div className="glass-panel" style={{ padding: '1.5rem', backgroundColor: 'rgba(0,0,0,0.2)' }}>

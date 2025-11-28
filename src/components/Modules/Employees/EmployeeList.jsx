@@ -3,7 +3,7 @@ import EmployeeForm from './EmployeeForm';
 import EmployeeDetails from './EmployeeDetails';
 import '../../../styles/index.css';
 
-const EmployeeList = ({ employees, companies, onAddEmployee, onUpdateEmployee, onDeleteEmployee, userRole, userCompanyId, auditLog }) => {
+const EmployeeList = ({ employees, companies, costCenters, onAddEmployee, onUpdateEmployee, onDeleteEmployee, userRole, userCompanyId, auditLog, setHasUnsavedChanges }) => {
     const [isCreating, setIsCreating] = useState(false);
     const [editingEmployee, setEditingEmployee] = useState(null);
     const [viewingEmployee, setViewingEmployee] = useState(null);
@@ -52,6 +52,7 @@ const EmployeeList = ({ employees, companies, onAddEmployee, onUpdateEmployee, o
             <EmployeeDetails
                 employee={viewingEmployee}
                 companies={companies}
+                costCenters={costCenters}
                 auditLog={auditLog}
                 onClose={() => setViewingEmployee(null)}
                 onEdit={() => {
@@ -71,6 +72,9 @@ const EmployeeList = ({ employees, companies, onAddEmployee, onUpdateEmployee, o
                 companies={companies}
                 userRole={userRole}
                 userCompanyId={userCompanyId}
+                employees={employees}
+                costCenters={costCenters}
+                setHasUnsavedChanges={setHasUnsavedChanges}
             />
         );
     }
@@ -117,7 +121,7 @@ const EmployeeList = ({ employees, companies, onAddEmployee, onUpdateEmployee, o
                 />
             </div>
 
-            <div className="glass-panel" style={{ overflow: 'hidden' }}>
+            <div className="glass-panel" style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead style={{ backgroundColor: 'var(--surface-color)' }}>
                         <tr>

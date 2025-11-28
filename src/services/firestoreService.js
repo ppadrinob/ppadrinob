@@ -172,3 +172,45 @@ export const addLogEntry = async (logEntry) => {
         throw error;
     }
 };
+// --- COST CENTERS ---
+
+export const subscribeToCostCenters = (callback) => {
+    const q = query(collection(db, 'cost_centers'));
+    return onSnapshot(q, (snapshot) => {
+        const centers = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        callback(centers);
+    });
+};
+
+export const addCostCenter = async (centerData) => {
+    try {
+        const docRef = await addDoc(collection(db, 'cost_centers'), centerData);
+        return { id: docRef.id, ...centerData };
+    } catch (error) {
+        console.error("Error adding cost center: ", error);
+        throw error;
+    }
+};
+
+export const updateCostCenter = async (id, centerData) => {
+    try {
+        const stringId = String(id);
+        const centerRef = doc(db, 'cost_centers', stringId);
+        await updateDoc(centerRef, centerData);
+    } catch (error) {
+        console.error("Error updating cost center: ", error);
+        throw error;
+    }
+};
+
+export const deleteCostCenter = async (id) => {
+    try {
+        await deleteDoc(doc(db, 'cost_centers', id));
+    } catch (error) {
+        console.error("Error deleting cost center: ", error);
+        throw error;
+    }
+};

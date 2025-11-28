@@ -4,18 +4,22 @@ import LoginPage from './components/Auth/LoginPage';
 import CompanyList from './components/Modules/Company/CompanyList';
 import UserList from './components/Modules/Users/UserList';
 import EmployeeList from './components/Modules/Employees/EmployeeList';
+import CostCenterList from './components/Modules/CostCenters/CostCenterList';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { payrolls } from './data/mockData';
+import { getBankName } from './data/colombianBanks';
+import { getEPSName } from './data/colombianEPS';
+import { getCompensationFundName } from './data/colombianCompensationFunds';
+import { getPensionFundName } from './data/colombianPensionFunds';
+import { getARLName } from './data/colombianARL';
+import './styles/index.css';
 import {
   subscribeToCompanies, addCompany, updateCompany,
   subscribeToEmployees, addEmployee, updateEmployee, deleteEmployee,
   subscribeToUsers, addUser, updateUser, deleteUser,
-  // NEW: audit log services
-  subscribeToAuditLog, addLogEntry
+  subscribeToAuditLog, addLogEntry,
+  subscribeToCostCenters, addCostCenter, updateCostCenter, deleteCostCenter
 } from './services/firestoreService';
-
-// Audit log state and subscription are now handled inside AppContent
-
 
 const Dashboard = ({ companiesCount, employeesCount, payrollsCount }) => {
   return (
@@ -49,8 +53,10 @@ const AppContent = () => {
   const [companies, setCompanies] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [users, setUsers] = useState([]);
+  const [costCenters, setCostCenters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [auditLog, setAuditLog] = useState([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Subscribe to Companies
   useEffect(() => {
@@ -80,7 +86,16 @@ const AppContent = () => {
     return () => unsubscribe();
   }, [user]);
 
-  // Audit log state and real‑time subscription (inside AppContent)
+  // Subscribe to Cost Centers
+  useEffect(() => {
+    if (!user) return;
+    const unsubscribe = subscribeToCostCenters((data) => {
+      setCostCenters(data);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  // Audit log state and real‑time subscription
   useEffect(() => {
     if (!user) return;
     const unsub = subscribeToAuditLog((data) => setAuditLog(data));
@@ -94,10 +109,11 @@ const AppContent = () => {
 
   // --- HANDLERS (Async with Firebase) ---
 
-  // Async function to add a log entry to Firestore (real‑time listener will update state)
-  const addToLog = async (companyId, action, details) => {
+  // Async function to add a log entry to Firestore
+  const addToLog = async (companyId, action, details, targetId = null) => {
     const entry = {
       companyId,
+      targetId, // ID específico del registro (empleado, centro de costo, etc.)
       user: user.email,
       action,
       details,
@@ -115,24 +131,21 @@ const AppContent = () => {
       const added = await addCompany(newCompany);
       addToLog(added.id, 'Creación', 'Empresa registrada en el sistema');
       console.log("Empresa creada:", added);
-      return added; // Return the created company
+      return added;
     } catch (error) {
       console.error('Error al crear empresa:', error);
       alert('Error al crear empresa: ' + error.message);
-      throw error; // Re-throw to let the caller handle it
+      throw error;
     }
   };
 
   const handleUpdateCompany = async (updatedCompany) => {
     try {
-      // Clone the previous state before Firestore updates it
       const oldCompany = companies.find(c => c.id === updatedCompany.id);
       const oldCopy = oldCompany ? { ...oldCompany } : null;
 
-      // Update in Firestore
       await updateCompany(updatedCompany.id, updatedCompany);
 
-      // Determine what actually changed
       const changes = [];
       if (oldCopy) {
         if (oldCopy.name !== updatedCompany.name) {
@@ -163,7 +176,6 @@ const AppContent = () => {
 
   const handleAddUser = async (newUser) => {
     try {
-      // Hash password before saving
       const { hashPassword } = await import('./utils/security');
       const hashedPassword = await hashPassword(newUser.password);
 
@@ -178,16 +190,12 @@ const AppContent = () => {
 
   const handleUpdateUser = async (updatedUser) => {
     try {
-      // Get old user data for comparison
       const oldUser = users.find(u => u.id === updatedUser.id);
       const oldCopy = oldUser ? { ...oldUser } : null;
 
-      // Only update the fields that are provided
       const updateData = { ...updatedUser };
-      // Remove the id from the update data as it's not a field to update
       delete updateData.id;
 
-      // If password is being updated, hash it
       if (updateData.password) {
         const { hashPassword } = await import('./utils/security');
         updateData.password = await hashPassword(updateData.password);
@@ -195,7 +203,6 @@ const AppContent = () => {
 
       await updateUser(updatedUser.id, updateData);
 
-      // Log changes
       const changes = [];
       if (oldCopy) {
         if (oldCopy.name !== updatedUser.name) changes.push(`Nombre: ${oldCopy.name} -> ${updatedUser.name}`);
@@ -239,15 +246,12 @@ const AppContent = () => {
 
   const handleUpdateEmployee = async (updatedEmployee) => {
     try {
-      // Clone the previous state before Firestore updates it
       const oldEmployee = employees.find(e => e.id === updatedEmployee.id);
       const oldCopy = oldEmployee ? { ...oldEmployee } : null;
 
-      // Update in Firestore (remove id from the data)
       const { id, ...employeeDataWithoutId } = updatedEmployee;
       await updateEmployee(id, employeeDataWithoutId);
 
-      // Determine what actually changed
       const changes = [];
       if (oldCopy) {
         if (oldCopy.firstName !== updatedEmployee.firstName) {
@@ -271,6 +275,15 @@ const AppContent = () => {
         if (oldCopy.email !== updatedEmployee.email) {
           changes.push(`Email: ${oldCopy.email || 'N/A'} -> ${updatedEmployee.email || 'N/A'}`);
         }
+        if (oldCopy.costCenter !== updatedEmployee.costCenter) {
+          const oldCenterName = oldCopy.costCenter
+            ? (costCenters.find(cc => cc.id === oldCopy.costCenter)?.name || oldCopy.costCenter)
+            : 'N/A';
+          const newCenterName = updatedEmployee.costCenter
+            ? (costCenters.find(cc => cc.id === updatedEmployee.costCenter)?.name || updatedEmployee.costCenter)
+            : 'N/A';
+          changes.push(`Centro de Costo: ${oldCenterName} -> ${newCenterName}`);
+        }
 
         if (oldCopy.bank !== updatedEmployee.bank) {
           const oldBank = getBankName(oldCopy.bank);
@@ -282,6 +295,26 @@ const AppContent = () => {
         }
         if (oldCopy.accountNumber !== updatedEmployee.accountNumber) {
           changes.push(`No. Cuenta: ${oldCopy.accountNumber || 'N/A'} -> ${updatedEmployee.accountNumber}`);
+        }
+        if (oldCopy.healthProvider !== updatedEmployee.healthProvider) {
+          const oldEPS = getEPSName(oldCopy.healthProvider);
+          const newEPS = getEPSName(updatedEmployee.healthProvider);
+          changes.push(`EPS: ${oldEPS} -> ${newEPS}`);
+        }
+        if (oldCopy.compensationFund !== updatedEmployee.compensationFund) {
+          const oldFund = getCompensationFundName(oldCopy.compensationFund);
+          const newFund = getCompensationFundName(updatedEmployee.compensationFund);
+          changes.push(`Caja: ${oldFund} -> ${newFund}`);
+        }
+        if (oldCopy.pensionFund !== updatedEmployee.pensionFund) {
+          const oldFund = getPensionFundName(oldCopy.pensionFund);
+          const newFund = getPensionFundName(updatedEmployee.pensionFund);
+          changes.push(`Pensión: ${oldFund} -> ${newFund}`);
+        }
+        if (oldCopy.arl !== updatedEmployee.arl) {
+          const oldARL = getARLName(oldCopy.arl);
+          const newARL = getARLName(updatedEmployee.arl);
+          changes.push(`ARL: ${oldARL} -> ${newARL}`);
         }
       }
 
@@ -308,6 +341,50 @@ const AppContent = () => {
     }
   };
 
+  // --- COST CENTER HANDLERS ---
+  const handleAddCostCenter = async (newCenter) => {
+    try {
+      const added = await addCostCenter(newCenter);
+      addToLog(newCenter.companyId, 'Creación Centro Costo', `Centro de Costo ${newCenter.name} (${newCenter.code}) creado`, added.id);
+      return added;
+    } catch (error) {
+      alert('Error al crear centro de costo: ' + error.message);
+    }
+  };
+
+  const handleUpdateCostCenter = async (updatedCenter) => {
+    try {
+      const oldCenter = costCenters.find(c => c.id === updatedCenter.id);
+      const oldCopy = oldCenter ? { ...oldCenter } : null;
+
+      await updateCostCenter(updatedCenter.id, updatedCenter);
+
+      const changes = [];
+      if (oldCopy) {
+        if (oldCopy.name !== updatedCenter.name) changes.push(`Nombre: ${oldCopy.name} -> ${updatedCenter.name}`);
+        if (oldCopy.code !== updatedCenter.code) changes.push(`Código: ${oldCopy.code} -> ${updatedCenter.code}`);
+      }
+
+      if (changes.length > 0) {
+        addToLog(updatedCenter.companyId, 'Edición Centro Costo', changes.join(', '), updatedCenter.id);
+      }
+    } catch (error) {
+      alert('Error al actualizar centro de costo: ' + error.message);
+    }
+  };
+
+  const handleDeleteCostCenter = async (centerId) => {
+    try {
+      const center = costCenters.find(c => c.id === centerId);
+      await deleteCostCenter(centerId);
+      if (center) {
+        addToLog(center.companyId, 'Eliminación Centro Costo', `Centro de Costo ${center.name} eliminado`, centerId);
+      }
+    } catch (error) {
+      alert('Error al eliminar centro de costo: ' + error.message);
+    }
+  };
+
   // Filter companies based on user role
   const getAccessibleCompanies = () => {
     if (user.role === 'super_admin') {
@@ -316,6 +393,18 @@ const AppContent = () => {
       return companies.filter(c => c.id == user.companyId);
     }
     return [];
+  };
+
+  // Navigation handler with unsaved changes check
+  const handleNavigate = (view) => {
+    if (hasUnsavedChanges) {
+      if (window.confirm('Tienes cambios sin guardar. ¿Estás seguro de que quieres salir? Se perderán los datos no guardados.')) {
+        setHasUnsavedChanges(false);
+        setCurrentView(view);
+      }
+    } else {
+      setCurrentView(view);
+    }
   };
 
   const renderView = () => {
@@ -338,8 +427,20 @@ const AppContent = () => {
             userRole={user.role}
           />
         );
+      case 'cost-centers':
+        return (
+          <CostCenterList
+            costCenters={costCenters}
+            companies={companies}
+            onAdd={handleAddCostCenter}
+            onUpdate={handleUpdateCostCenter}
+            onDelete={handleDeleteCostCenter}
+            userRole={user.role}
+            userCompanyId={user.companyId}
+            auditLog={auditLog}
+          />
+        );
       case 'users':
-        // Solo super_admin puede ver usuarios
         if (user.role !== 'super_admin') {
           return (
             <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
@@ -362,12 +463,14 @@ const AppContent = () => {
           <EmployeeList
             employees={employees}
             companies={companies}
+            costCenters={costCenters}
             onAddEmployee={handleAddEmployee}
             onUpdateEmployee={handleUpdateEmployee}
             onDeleteEmployee={handleDeleteEmployee}
             userRole={user.role}
             userCompanyId={user.companyId}
             auditLog={auditLog}
+            setHasUnsavedChanges={setHasUnsavedChanges}
           />
         );
       default:
@@ -382,7 +485,7 @@ const AppContent = () => {
   const userCompany = companies.find(c => c.id == user.companyId);
 
   return (
-    <Layout currentView={currentView} onNavigate={setCurrentView} userCompany={userCompany}>
+    <Layout currentView={currentView} onNavigate={handleNavigate} userCompany={userCompany}>
       {renderView()}
     </Layout>
   );

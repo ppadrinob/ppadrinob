@@ -6,6 +6,7 @@ import { MODULES } from '../../config/modules';
 const Layout = ({ children, currentView, onNavigate, userCompany }) => {
     const { user } = useAuth();
     const [expandedModules, setExpandedModules] = useState({});
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const toggleModule = (moduleId) => {
         setExpandedModules(prev => ({
@@ -13,21 +14,40 @@ const Layout = ({ children, currentView, onNavigate, userCompany }) => {
             [moduleId]: !prev[moduleId]
         }));
     };
+
+    const handleNavigate = (path) => {
+        onNavigate(path);
+        setIsSidebarOpen(false); // Close sidebar on mobile after navigation
+    };
+
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-color)' }}>
+        <div className="layout-container">
+            {/* Mobile Overlay */}
+            <div
+                className={`sidebar-overlay ${isSidebarOpen ? 'open' : ''}`}
+                onClick={() => setIsSidebarOpen(false)}
+            />
+
             {/* Sidebar */}
-            <aside className="glass-panel" style={{ width: '260px', margin: '1rem', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ marginBottom: '2rem' }}>
+            <aside className={`glass-panel sidebar ${isSidebarOpen ? 'open' : ''}`}>
+                <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 className="text-gradient" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>NominaPro</h2>
+                    <button
+                        className="menu-toggle"
+                        onClick={() => setIsSidebarOpen(false)}
+                        style={{ background: 'transparent', fontSize: '1.2rem' }}
+                    >
+                        ✕
+                    </button>
                 </div>
 
-                <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <NavItem label="Dashboard" active={currentView === 'dashboard'} onClick={() => onNavigate('dashboard')} />
+                <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1, overflowY: 'auto' }}>
+                    <NavItem label="Dashboard" active={currentView === 'dashboard'} onClick={() => handleNavigate('dashboard')} />
 
                     {user?.role === 'super_admin' && (
                         <>
-                            <NavItem label="Empresas" active={currentView === 'companies'} onClick={() => onNavigate('companies')} />
-                            <NavItem label="Usuarios" active={currentView === 'users'} onClick={() => onNavigate('users')} />
+                            <NavItem label="Empresas" active={currentView === 'companies'} onClick={() => handleNavigate('companies')} />
+                            <NavItem label="Usuarios" active={currentView === 'users'} onClick={() => handleNavigate('users')} />
                         </>
                     )}
 
@@ -73,7 +93,7 @@ const Layout = ({ children, currentView, onNavigate, userCompany }) => {
                                                 key={sub.id}
                                                 label={sub.label}
                                                 active={currentView === sub.path}
-                                                onClick={() => onNavigate(sub.path)}
+                                                onClick={() => handleNavigate(sub.path)}
                                                 style={{ paddingLeft: '2rem', fontSize: '0.95rem' }}
                                             />
                                         ))}
@@ -84,12 +104,12 @@ const Layout = ({ children, currentView, onNavigate, userCompany }) => {
                     })}
                 </nav>
 
-                <div style={{ marginTop: 'auto' }}>
+                <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--surface-color)' }}>
                         <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--primary-color)' }}></div>
-                        <div style={{ flex: 1 }}>
-                            <p style={{ fontSize: '0.875rem', fontWeight: '500' }}>{user?.name}</p>
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{user?.email}</p>
+                        <div style={{ flex: 1, overflow: 'hidden' }}>
+                            <p style={{ fontSize: '0.875rem', fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name}</p>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email}</p>
                         </div>
                         <button
                             onClick={() => {
@@ -106,18 +126,28 @@ const Layout = ({ children, currentView, onNavigate, userCompany }) => {
             </aside>
 
             {/* Main Content */}
-            <main style={{ flex: 1, padding: '1rem', overflowY: 'auto' }}>
-                <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold' }}>
-                        {currentView === 'dashboard' ? 'Dashboard' :
-                            currentView === 'companies' ? 'Empresas' :
-                                currentView === 'users' ? 'Usuarios' :
-                                    // Try to find the label in modules
-                                    Object.values(MODULES).flatMap(m => m.submodules).find(s => s.path === currentView)?.label || 'Dashboard'}
-                    </h1>
-                    <button className="glass-panel" style={{ padding: '0.5rem 1rem', color: 'var(--text-primary)' }}>
-                        Notificaciones
+            <main className="main-content">
+                <header style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center' }}>
+                    <button
+                        className="menu-toggle"
+                        onClick={() => setIsSidebarOpen(true)}
+                    >
+                        ☰
                     </button>
+
+                    <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold' }}>
+                            {currentView === 'dashboard' ? 'Dashboard' :
+                                currentView === 'companies' ? 'Empresas' :
+                                    currentView === 'users' ? 'Usuarios' :
+                                        // Try to find the label in modules
+                                        Object.values(MODULES).flatMap(m => m.submodules).find(s => s.path === currentView)?.label || 'Dashboard'}
+                        </h1>
+                        <button className="glass-panel" style={{ padding: '0.5rem 1rem', color: 'var(--text-primary)', display: 'none' }}>
+                            {/* Hidden on mobile for now to save space, or can be icon only */}
+                            Notificaciones
+                        </button>
+                    </div>
                 </header>
                 {children}
             </main>
