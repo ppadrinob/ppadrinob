@@ -88,14 +88,17 @@ const EmployeeDetails = ({ employee, companies, costCenters, auditLog, onClose, 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
                     <DetailField label="Tipo Documento" value={getDocumentTypeName(employee.documentType)} />
                     <DetailField label="Número Documento" value={employee.documentNumber} />
+                    <DetailField label="Expedición Documento" value={getCityName(employee.documentExpedition)} />
                     <DetailField label="Nombre Completo" value={`${employee.firstName} ${employee.secondName || ''} ${employee.firstLastName} ${employee.secondLastName || ''}`.trim()} />
+                    <DetailField label="Ciudad Nacimiento" value={getCityName(employee.birthCity)} />
                     <DetailField label="Fecha Nacimiento" value={employee.birthDate} />
+                    <DetailField label="Profesión" value={employee.profession} />
                     <DetailField label="Género" value={getGenderName(employee.gender)} />
                     <DetailField label="Estado Civil" value={employee.civilStatus} />
                     <DetailField label="Email" value={employee.email} />
                     <DetailField label="Teléfono" value={employee.phone} />
                     <DetailField label="Dirección" value={employee.address} />
-                    <DetailField label="Ciudad" value={getCityName(employee.city)} />
+                    <DetailField label="Ciudad Residencia" value={getCityName(employee.city)} />
                 </div>
             </div>
 
@@ -108,11 +111,21 @@ const EmployeeDetails = ({ employee, companies, costCenters, auditLog, onClose, 
                     <DetailField label="Empresa" value={getCompanyName(employee.companyId)} />
                     <DetailField label="Centro de Costo" value={getCostCenterName(employee.costCenter)} />
                     <DetailField label="Cargo" value={employee.position} />
+                    <DetailField label="Jefe" value={employee.boss} />
+                    <DetailField label="Tipo de Trabajador" value={employee.workerType} />
+                    <DetailField label="Subtipo de Trabajador" value={employee.workerSubtype} />
                     <DetailField label="Salario" value={`$${parseInt(employee.salary || 0).toLocaleString('es-CO')}`} />
+                    <DetailField label="Salario Integral" value={employee.integralSalary ? 'Sí' : 'No'} />
+                    <DetailField label="Auxilio de Transporte" value={employee.transportAllowance ? 'Sí' : 'No'} />
+                    <DetailField label="Salario Promedio" value={employee.averageSalary ? 'Sí' : 'No'} />
+                    <DetailField label="Método de Pago" value={employee.paymentMethod} />
+                    <DetailField label="Forma de Pago" value={employee.paymentForm} />
                     <DetailField label="Fecha Ingreso" value={employee.startDate} />
                     <DetailField label="Fecha Retiro" value={employee.endDate || 'N/A'} />
                     <DetailField label="Tipo Contrato" value={employee.contractType} />
+                    <DetailField label="Jornada" value={employee.workday} />
                     <DetailField label="Estado" value={employee.status} />
+                    <DetailField label="Etapa" value={employee.stage} />
                 </div>
             </div>
 
