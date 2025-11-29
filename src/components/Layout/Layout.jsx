@@ -35,9 +35,12 @@ const Layout = ({ children, currentView, onNavigate, userCompany }) => {
                     <button
                         className="menu-toggle"
                         onClick={() => setIsSidebarOpen(false)}
-                        style={{ background: 'transparent', fontSize: '1.2rem' }}
+                        style={{ background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}
                     >
-                        ✕
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
                     </button>
                 </div>
 
@@ -116,10 +119,13 @@ const Layout = ({ children, currentView, onNavigate, userCompany }) => {
                                 localStorage.removeItem('payroll_user');
                                 window.location.reload();
                             }}
-                            style={{ color: 'var(--text-secondary)', background: 'transparent', fontSize: '1.2rem' }}
+                            style={{ color: 'var(--text-secondary)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             title="Cerrar Sesión"
                         >
-                            ⏻
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                                <line x1="12" y1="2" x2="12" y2="12"></line>
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -131,8 +137,13 @@ const Layout = ({ children, currentView, onNavigate, userCompany }) => {
                     <button
                         className="menu-toggle"
                         onClick={() => setIsSidebarOpen(true)}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', color: 'var(--text-primary)' }}
                     >
-                        ☰
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
                     </button>
 
                     <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

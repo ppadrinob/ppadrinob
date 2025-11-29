@@ -1,5 +1,6 @@
 {
     "hosting": {
+        "site": "nominapro-app",
         "public": "dist",
         "ignore": [
             "firebase.json",
